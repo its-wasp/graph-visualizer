@@ -68,7 +68,7 @@ with left:
                         y=st.session_state["positions"][node_id]["y"],
                         fixed=True,
                         size=15,
-                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"}
                     )
                     for node_id in node_ids
                 ]
@@ -83,7 +83,7 @@ with left:
                         fixed=True,
                         color="#1f78b4",
                         font_color="#000",
-                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                         title=str(node_id),
                         size=15
                     ) for node_id in node_ids
@@ -101,7 +101,7 @@ with left:
                         y=st.session_state["positions"][node_id]["y"],
                         fixed=True,
                         size=15,
-                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"}
                     )
                     for node_id in node_ids
                 ]
@@ -134,7 +134,7 @@ with left:
                         fixed=True,
                         color="#1f78b4",
                         font_color="#000",
-                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                         title=str(node_id),
                         size=15
                     ) for node_id in node_ids
@@ -156,7 +156,7 @@ with left:
                     y=st.session_state["positions"][node]["y"],
                     fixed=True,
                     size=15,
-                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"}
                 )
                 for node in node_list
             ]
@@ -171,7 +171,7 @@ with left:
                     fixed=True,
                     color="#1f78b4",
                     font_color="#000",
-                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
+                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                     title=str(node),
                     size=15
                 ) for node in node_list
@@ -546,7 +546,7 @@ with right:
                             fixed=True,
                             color=color,
                             font_color="#000",
-                            font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
+                            font={"color": "#000", "size": 18, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                             title=str(node),
                             size=15
                         )
@@ -580,7 +580,7 @@ with right:
                         fixed=True,
                         color="#1f78b4",
                         font_color="#000",
-                        font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
+                        font={"color": "#000", "size": 18, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                         title=str(node.id),
                         size=15
                     ) for node in st.session_state["nodes"]
@@ -606,7 +606,7 @@ with right:
                     fixed=True,
                     color="#1f78b4",
                     font_color="#000",
-                    font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
+                    font={"color": "#000", "size": 18, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
                     title=str(node.id),
                     size=15
                 ) for node in st.session_state["nodes"]
