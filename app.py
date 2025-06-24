@@ -36,7 +36,7 @@ with left:
 
     default_weight = st.number_input("Default edge weight", min_value=-1000000000, value=1, step=1)
 
-    def assign_circular_positions(node_ids, radius=200, center=(0, 0)):
+    def assign_circular_positions(node_ids, radius=180, center=(0, 0)):
         n = len(node_ids)
         positions = {}
         for i, node_id in enumerate(node_ids):
@@ -52,7 +52,7 @@ with left:
             node_ids = [str(i) for i in range(1, n+1)]
             st.session_state["positions"] = assign_circular_positions(node_ids)
             st.session_state["nodes"] = [
-                Node(id=node_id, label=node_id, x=st.session_state["positions"][node_id]["x"], y=st.session_state["positions"][node_id]["y"], fixed=True)
+                Node(id=node_id, label=node_id, x=st.session_state["positions"][node_id]["x"], y=st.session_state["positions"][node_id]["y"], fixed=True, size=15)
                 for node_id in node_ids
             ]
             st.session_state["edges"] = []
@@ -62,7 +62,7 @@ with left:
             node_list = [node.strip() for node in node_str.split(",") if node.strip()]
             st.session_state["positions"] = assign_circular_positions(node_list)
             st.session_state["nodes"] = [
-                Node(id=node, label=node, x=st.session_state["positions"][node]["x"], y=st.session_state["positions"][node]["y"], fixed=True)
+                Node(id=node, label=node, x=st.session_state["positions"][node]["x"], y=st.session_state["positions"][node]["y"], fixed=True, size=15)
                 for node in node_list
             ]
             st.session_state["edges"] = []
@@ -310,6 +310,10 @@ with right:
             if algorithm == "Floyd_warshall" and current_step.get("current_nodes"):
                 k, i, j = current_step["current_nodes"]
                 highlight_nodes.update([k, i, j])
+            # Highlight nodes for Bellman-Ford (current edge)
+            if algorithm == "Bellman_ford" and current_step.get("current_edge"):
+                u, v = current_step["current_edge"]
+                highlight_nodes.update([u, v])
             nodes_to_show = []
             for node in [node.id for node in st.session_state["nodes"]]:
                 color = "#1f78b4"
@@ -322,6 +326,8 @@ with right:
                 if node in highlight_nodes:
                     if algorithm == "Floyd_warshall":
                         color = "#ff9800"  # orange for k, i, j
+                    elif algorithm == "Bellman_ford":
+                        color = "#ffd700"  # yellow for Bellman-Ford step
                     else:
                         color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
                 nodes_to_show.append(
@@ -334,23 +340,27 @@ with right:
                         color=color,
                         font_color="#000",
                         font={"color": "#000"},
-                        title=str(node)
+                        title=str(node),
+                        size=15
                     )
                 )
             edges_to_show = []
             for edge in st.session_state["edges"]:
                 edge_color = "#848484"
+                edge_width = 3  # Thicker edges by default
                 if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
                     edge_color = "#ff9800"
+                    edge_width = 5
                 if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
                     edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color))
+                    edge_width = 5
+                edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
         else:
             nodes_to_show = st.session_state["nodes"]
             edges_to_show = st.session_state["edges"]
         config = Config(
             width=1200,
-            height=800,
+            height=1500,
             directed=(graph_type == "Directed"),
             physics=True,
             hierarchical=False,
