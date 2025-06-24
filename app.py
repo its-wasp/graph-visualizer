@@ -3,6 +3,7 @@ st.set_page_config(layout="wide")
 from streamlit_agraph import agraph, Node, Edge, Config
 import math
 from graph_engine import get_algorithms
+import pandas as pd
 st.title("Graph Visualizer")
 
 # Initialize session state
@@ -194,112 +195,159 @@ with left:
 
         # Show stepper only if algorithm is running
         if st.session_state["bfs_steps"]:
-            try:
-                step_idx = st.session_state["bfs_step_idx"]
-                steps = st.session_state["bfs_steps"]
-                current_step = steps[step_idx]
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Previous Step", key="prev_step") and step_idx > 0:
-                        st.session_state["bfs_step_idx"] -= 1
-                with col2:
-                    if st.button("Next Step", key="next_step") and step_idx < len(steps) - 1:
-                        st.session_state["bfs_step_idx"] += 1
+            step_idx = st.session_state["bfs_step_idx"]
+            steps = st.session_state["bfs_steps"]
+            current_step = steps[step_idx]
+            col1, col2 = st.columns(2)
 
-                st.write(f"Step {step_idx+1} of {len(steps)}")
+            # Handle step navigation
+            with col1:
+                if st.button("Previous Step", key="prev_step") and step_idx > 0:
+                    st.session_state["bfs_step_idx"] -= 1
+                    step_idx = st.session_state["bfs_step_idx"]
+                    current_step = steps[step_idx]
+
+            with col2:
+                if st.button("Next Step", key="next_step") and step_idx < len(steps) - 1:
+                    st.session_state["bfs_step_idx"] += 1
+                    step_idx = st.session_state["bfs_step_idx"]
+                    current_step = steps[step_idx]
+
+            st.write(f"Step {step_idx+1} of {len(steps)}")
+
+            # Display algorithm-specific information
+            try:
                 # Bellman-Ford
                 if algorithm == "Bellman_ford":
-                    st.write(f"Current edge: {current_step.get('current_edge', 'N/A')}")
-                    st.write(f"Distances: {current_step.get('distances', {})}")
-                    st.write(f"Iteration: {current_step.get('iteration', 'N/A')}")
+                    current_edge = current_step.get('current_edge', 'N/A')
+                    distances = current_step.get('distances', {})
+                    iteration = current_step.get('iteration', 'N/A')
+                    
+                    st.write(f"Current edge: {current_edge}")
+                    st.write(f"Distances: {distances}")
+                    st.write(f"Iteration: {iteration}")
+                    
                     if step_idx == len(steps) - 1:
                         if current_step.get('negative_cycle', False):
                             st.info("Negative weight cycle detected!")
                         else:
-                            st.success("No negative weight cycle detected.")
+                            st.success("No negative weight cycle detected!")
+                            # Display final distances in a table
+                            st.subheader("Final Shortest Path Distances")
+                            df_data = []
+                            for node in sorted(distances.keys()):
+                                dist = distances[node]
+                                df_data.append({
+                                    "Node": node,
+                                    "Distance from Source": "∞" if dist == float('inf') else dist
+                                })
+                            df = pd.DataFrame(df_data)
+                            st.dataframe(df, hide_index=True)
+
                 # Floyd-Warshall
                 elif algorithm == "Floyd_warshall":
-                    try:
-                        st.write(f"Current nodes (k,i,j): {current_step.get('current_nodes', 'N/A')}")
-                        st.write(f"Distances: {current_step.get('distances', {})}")
-                        if step_idx == len(steps) - 1:
-                            if current_step.get('negative_cycle', False):
-                                st.info("Negative weight cycle detected!")
-                            else:
-                                st.success("No negative weight cycle detected.")
-                    except:
-                        pass
+                    current_nodes = current_step.get('current_nodes', 'N/A')
+                    distances = current_step.get('distances', {})
+                    
+                    st.write(f"Current nodes (k,i,j): {current_nodes}")
+                    st.write(f"Distances: {distances}")
+                    
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('negative_cycle', False):
+                            st.info("Negative weight cycle detected!")
+                        else:
+                            st.success("No negative weight cycle detected!")
+                            # Display final distances in a table
+                            st.subheader("All Pairs Shortest Path Distances")
+                            # Convert the nested dictionary to a DataFrame
+                            nodes = sorted(distances.keys())
+                            df_data = []
+                            for source in nodes:
+                                row = {"Source": source}
+                                for target in nodes:
+                                    dist = distances[source][target]
+                                    row[f"To {target}"] = "∞" if dist == float('inf') else dist
+                                df_data.append(row)
+                            df = pd.DataFrame(df_data)
+                            st.dataframe(df, hide_index=True)
+
                 # Kahn's
                 elif algorithm == "Kahn":
-                    try:
-                        st.write(f"Current: {current_step.get('current', 'N/A')}")
-                        st.write(f"In-degree: {current_step.get('in_degree', {})}")
-                        st.write(f"Queue: {current_step.get('queue', [])}")
-                        st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
-                        if step_idx == len(steps) - 1:
-                            if current_step.get('cycle_detected', False):
-                                st.info("Cycle detected! Topological sort not possible.")
-                            else:
-                                st.success("No cycle detected. Topological sort possible.")
-                    except:
-                        pass
+                    st.write(f"Current: {current_step.get('current', 'N/A')}")
+                    st.write(f"In-degree: {current_step.get('in_degree', {})}")
+                    st.write(f"Queue: {current_step.get('queue', [])}")
+                    st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
+                    
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('cycle_detected', False):
+                            st.info("Cycle detected! Topological sort not possible.")
+                        else:
+                            st.success("No cycle detected. Topological sort possible.")
+
                 # DFS-based Topo Sort
                 elif algorithm == "Dfs_topo":
-                    try:
-                        st.write(f"Current: {current_step.get('current', 'N/A')}")
-                        st.write(f"Visited: {list(current_step.get('visited', []))}")
-                        st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
-                        if step_idx == len(steps) - 1:
-                            if current_step.get('cycle_detected', False):
-                                st.info("Cycle detected! Topological sort not possible.")
-                            else:
-                                st.success("No cycle detected. Topological sort possible.")
-                    except:
-                        pass
+                    st.write(f"Current: {current_step.get('current', 'N/A')}")
+                    st.write(f"Visited: {list(current_step.get('visited', []))}")
+                    st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
+                    
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('cycle_detected', False):
+                            st.info("Cycle detected! Topological sort not possible.")
+                        else:
+                            st.success("No cycle detected. Topological sort possible.")
+
                 # Cycle Detection Undirected
                 elif algorithm == "Cycle_undirected":
-                    try:
-                        st.write(f"Current: {current_step.get('current', 'N/A')}")
-                        st.write(f"Visited: {list(current_step.get('visited', []))}")
-                        st.write(f"Parent: {current_step.get('parent', 'N/A')}")
-                        if step_idx == len(steps) - 1:
-                            if current_step.get('cycle_found', False):
-                                st.info("Cycle detected in undirected graph!")
-                            else:
-                                st.success("No cycle detected in undirected graph.")
-                    except:
-                        pass
+                    st.write(f"Current: {current_step.get('current', 'N/A')}")
+                    st.write(f"Visited: {list(current_step.get('visited', []))}")
+                    st.write(f"Parent: {current_step.get('parent', 'N/A')}")
+                    
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('cycle_found', False):
+                            st.info("Cycle detected in undirected graph!")
+                        else:
+                            st.success("No cycle detected in undirected graph.")
+
                 # Cycle Detection Directed
                 elif algorithm == "Cycle_directed":
-                    try:
-                        st.write(f"Current: {current_step.get('current', 'N/A')}")
-                        st.write(f"Visited: {list(current_step.get('visited', []))}")
-                        st.write(f"Recursion stack: {list(current_step.get('rec_stack', []))}")
-                        if step_idx == len(steps) - 1:
-                            if current_step.get('cycle_found', False):
-                                st.info("Cycle detected in directed graph!")
-                            else:
-                                st.success("No cycle detected in directed graph.")
-                    except:
-                        pass
+                    st.write(f"Current: {current_step.get('current', 'N/A')}")
+                    st.write(f"Visited: {list(current_step.get('visited', []))}")
+                    st.write(f"Recursion stack: {list(current_step.get('rec_stack', []))}")
+                    
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('cycle_found', False):
+                            st.info("Cycle detected in directed graph!")
+                        else:
+                            st.success("No cycle detected in directed graph.")
+
                 # MST
                 elif algorithm in ["Kruskal", "Prim"]:
-                    try:
-                        st.write(f"MST edges so far: {current_step.get('edges_in_mst', [])}")
-                        st.write(f"Current edge considered: {current_step.get('current_edge', 'N/A')}")
-                        st.write(f"MST total weight so far: {current_step.get('mst_weight', 0)}")
-                        if 'visited' in current_step:
-                            st.write(f"Nodes in MST so far: {list(current_step.get('visited', []))}")
-                    except:
-                        pass
+                    st.write(f"MST edges so far: {current_step.get('edges_in_mst', [])}")
+                    st.write(f"Current edge considered: {current_step.get('current_edge', 'N/A')}")
+                    st.write(f"MST total weight so far: {current_step.get('mst_weight', 0)}")
+                    if 'visited' in current_step:
+                        st.write(f"Nodes in MST so far: {list(current_step.get('visited', []))}")
+
                 # Dijkstra
                 elif 'distances' in current_step:
-                    try:
-                        st.write(f"Current distances: {current_step.get('distances', {})}")
-                        min_dist = current_step.get('distances', {}).get(current_step.get('current', ''), float('inf'))
-                        st.write(f"Minimum weight until current node ({current_step.get('current', '')}): {min_dist}")
-                    except:
-                        pass
+                    distances = current_step.get('distances', {})
+                    current = current_step.get('current', '')
+                    min_dist = distances.get(current, float('inf'))
+                    st.write(f"Current distances: {distances}")
+                    st.write(f"Minimum weight until current node ({current}): {min_dist}")
+                    
+                    if step_idx == len(steps) - 1:
+                        # Display final distances in a table
+                        st.subheader("Final Shortest Path Distances")
+                        df_data = []
+                        for node in sorted(distances.keys()):
+                            dist = distances[node]
+                            df_data.append({
+                                "Node": node,
+                                "Distance from Source": "∞" if dist == float('inf') else dist
+                            })
+                        df = pd.DataFrame(df_data)
+                        st.dataframe(df, hide_index=True)
             except:
                 pass
 
