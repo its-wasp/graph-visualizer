@@ -16,6 +16,10 @@ if "bfs_steps" not in st.session_state:
     st.session_state["bfs_steps"] = []
 if "bfs_step_idx" not in st.session_state:
     st.session_state["bfs_step_idx"] = 0
+if "nodes_to_show" not in st.session_state:
+    st.session_state["nodes_to_show"] = []
+if "edges_to_show" not in st.session_state:
+    st.session_state["edges_to_show"] = []
 
 # Layout: controls on the left, graph on the right
 left, right = st.columns([1, 2])  # Adjust ratio as you like
@@ -56,6 +60,22 @@ with left:
                 for node_id in node_ids
             ]
             st.session_state["edges"] = []
+            # Initialize default visualization
+            st.session_state["nodes_to_show"] = [
+                Node(
+                    id=node_id,
+                    label=node_id,
+                    x=st.session_state["positions"][node_id]["x"],
+                    y=st.session_state["positions"][node_id]["y"],
+                    fixed=True,
+                    color="#1f78b4",
+                    font_color="#000",
+                    font={"color": "#000"},
+                    title=str(node_id),
+                    size=15
+                ) for node_id in node_ids
+            ]
+            st.session_state["edges_to_show"] = []
     elif mode == "Manually define nodes and edges":
         node_str = st.text_input("Enter nodes (comma-separated):", "A,B,C")
         if st.button("Generate Nodes"):
@@ -66,6 +86,22 @@ with left:
                 for node in node_list
             ]
             st.session_state["edges"] = []
+            # Initialize default visualization
+            st.session_state["nodes_to_show"] = [
+                Node(
+                    id=node,
+                    label=node,
+                    x=st.session_state["positions"][node]["x"],
+                    y=st.session_state["positions"][node]["y"],
+                    fixed=True,
+                    color="#1f78b4",
+                    font_color="#000",
+                    font={"color": "#000"},
+                    title=str(node),
+                    size=15
+                ) for node in node_list
+            ]
+            st.session_state["edges_to_show"] = []
 
     # Add edge UI
     if st.session_state["nodes"]:
@@ -268,147 +304,150 @@ with left:
                 pass
 
 with right:
-    if st.session_state["nodes"]:
-        try:
-            if st.session_state["bfs_steps"]:
-                try:
-                    step_idx = st.session_state["bfs_step_idx"]
-                    steps = st.session_state["bfs_steps"]
-                    current_step = steps[step_idx]
-                    visited = current_step.get("visited", [])
-                    current = current_step.get("current", None)
-                    mst_edges = current_step.get("edges_in_mst", [])
-                    highlight_edges = set()
-                    highlight_nodes = set()
-                    # Highlight shortest path for Dijkstra and Bellman-Ford
-                    if algorithm in ["Dijkstra", "Bellman_ford"] and step_idx == len(steps) - 1:
-                        try:
-                            distances = current_step.get("distances", {})
-                            sp_source = st.session_state.get("sp_source")
-                            sp_target = st.session_state.get("sp_target")
-                            if distances and sp_source and sp_target and sp_source in distances and sp_target in distances and distances[sp_target] < float('inf'):
-                                import networkx as nx
-                                if graph_type == "Directed":
-                                    G = nx.DiGraph()
-                                else:
-                                    G = nx.Graph()
-                                node_ids = [node.id for node in st.session_state["nodes"]]
-                                G.add_nodes_from(node_ids)
-                                for edge in st.session_state["edges"]:
-                                    G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
-                                try:
-                                    path = nx.shortest_path(G, source=sp_source, target=sp_target, weight='weight')
-                                    highlight_nodes.update(path)
-                                    highlight_edges.update([(path[i], path[i+1]) for i in range(len(path)-1)])
-                                except:
-                                    pass
-                        except:
-                            pass
-                    # Highlight cycle for cycle detection and topo sort/cycle detection algorithms
-                    cycle_algos = ["Cycle_undirected", "Cycle_directed", "Kahn", "Dfs_topo"]
-                    cycle_detected = False
-                    if algorithm in cycle_algos:
-                        # For direct cycle detection
-                        if algorithm in ["Cycle_undirected", "Cycle_directed"] and current_step.get('cycle_found', False):
-                            cycle_detected = True
-                        # For Kahn and Dfs_topo, check final step for cycle_detected
-                        if algorithm in ["Kahn", "Dfs_topo"] and step_idx == len(steps) - 1 and current_step.get('cycle_detected', False):
-                            cycle_detected = True
-                    if cycle_detected:
-                        import networkx as nx
-                        if graph_type == "Directed":
-                            G = nx.DiGraph()
-                        else:
-                            G = nx.Graph()
-                        node_ids = [node.id for node in st.session_state["nodes"]]
-                        G.add_nodes_from(node_ids)
-                        for edge in st.session_state["edges"]:
-                            G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
-                        try:
-                            if graph_type == "Directed":
-                                cycle = next(nx.simple_cycles(G))
-                                highlight_nodes.update(cycle)
-                                highlight_edges.update([(cycle[i], cycle[(i+1)%len(cycle)]) for i in range(len(cycle))])
-                            else:
-                                cycle = nx.find_cycle(G)
-                                highlight_edges.update([(u, v) for u, v in cycle])
-                                highlight_nodes.update([u for u, v in cycle] + [cycle[-1][1]])
-                        except Exception:
-                            pass
-                    # Highlight nodes for Floyd-Warshall (k, i, j)
-                    if algorithm == "Floyd_warshall" and current_step.get("current_nodes"):
-                        k, i, j = current_step["current_nodes"]
-                        highlight_nodes.update([k, i, j])
-                    # Highlight nodes for Bellman-Ford (current edge)
-                    if algorithm == "Bellman_ford" and current_step.get("current_edge"):
-                        u, v = current_step["current_edge"]
-                        highlight_nodes.update([u, v])
-                    nodes_to_show = []
-                    for node in [node.id for node in st.session_state["nodes"]]:
-                        color = "#1f78b4"
-                        if node == current:
-                            color = "#e41a1c"
-                        elif node in visited:
-                            color = "#4daf4a"
-                        elif algorithm in ["Kruskal", "Prim"] and node in visited:
-                            color = "#ff9800"
-                        if node in highlight_nodes:
-                            if algorithm == "Floyd_warshall":
-                                color = "#ff9800"  # orange for k, i, j
-                            elif algorithm == "Bellman_ford":
-                                color = "#ffd700"  # yellow for Bellman-Ford step
-                            else:
-                                color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                        nodes_to_show.append(
-                            Node(
-                                id=node,
-                                label=node,
-                                x=st.session_state["positions"][node]["x"],
-                                y=st.session_state["positions"][node]["y"],
-                                fixed=True,
-                                color=color,
-                                font_color="#000",
-                                font={"color": "#000"},
-                                title=str(node),
-                                size=15
-                            )
-                        )
-                    edges_to_show = []
-                    for edge in st.session_state["edges"]:
-                        edge_color = "#848484"
-                        edge_width = 3  # Thicker edges by default
-                        if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
-                            edge_color = "#ff9800"
-                            edge_width = 5
-                        if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
-                            edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                            edge_width = 5
-                        edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
-                except:
-                    pass
-        except:
-            pass
-        config = Config(
-            width=1200,
-            height=1500,
-            directed=(graph_type == "Directed"),
-            physics=True,
-            hierarchical=False,
-        )
-        if "zoom" in st.session_state:
+    try:
+        if st.session_state["bfs_steps"]:
             try:
-                config.zoom = st.session_state["zoom"]
-            except Exception:
+                step_idx = st.session_state["bfs_step_idx"]
+                steps = st.session_state["bfs_steps"]
+                current_step = steps[step_idx]
+                visited = current_step.get("visited", [])
+                current = current_step.get("current", None)
+                mst_edges = current_step.get("edges_in_mst", [])
+                highlight_edges = set()
+                highlight_nodes = set()
+                # Highlight shortest path for Dijkstra and Bellman-Ford
+                if algorithm in ["Dijkstra", "Bellman_ford"] and step_idx == len(steps) - 1:
+                    try:
+                        distances = current_step.get("distances", {})
+                        sp_source = st.session_state.get("sp_source")
+                        sp_target = st.session_state.get("sp_target")
+                        if distances and sp_source and sp_target and sp_source in distances and sp_target in distances and distances[sp_target] < float('inf'):
+                            import networkx as nx
+                            if graph_type == "Directed":
+                                G = nx.DiGraph()
+                            else:
+                                G = nx.Graph()
+                            node_ids = [node.id for node in st.session_state["nodes"]]
+                            G.add_nodes_from(node_ids)
+                            for edge in st.session_state["edges"]:
+                                G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
+                            try:
+                                path = nx.shortest_path(G, source=sp_source, target=sp_target, weight='weight')
+                                highlight_nodes.update(path)
+                                highlight_edges.update([(path[i], path[i+1]) for i in range(len(path)-1)])
+                            except:
+                                pass
+                    except:
+                        pass
+                # Highlight cycle for cycle detection and topo sort/cycle detection algorithms
+                cycle_algos = ["Cycle_undirected", "Cycle_directed", "Kahn", "Dfs_topo"]
+                cycle_detected = False
+                if algorithm in cycle_algos:
+                    # For direct cycle detection
+                    if algorithm in ["Cycle_undirected", "Cycle_directed"] and current_step.get('cycle_found', False):
+                        cycle_detected = True
+                    # For Kahn and Dfs_topo, check final step for cycle_detected
+                    if algorithm in ["Kahn", "Dfs_topo"] and step_idx == len(steps) - 1 and current_step.get('cycle_detected', False):
+                        cycle_detected = True
+                if cycle_detected:
+                    import networkx as nx
+                    if graph_type == "Directed":
+                        G = nx.DiGraph()
+                    else:
+                        G = nx.Graph()
+                    node_ids = [node.id for node in st.session_state["nodes"]]
+                    G.add_nodes_from(node_ids)
+                    for edge in st.session_state["edges"]:
+                        G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
+                    try:
+                        if graph_type == "Directed":
+                            cycle = next(nx.simple_cycles(G))
+                            highlight_nodes.update(cycle)
+                            highlight_edges.update([(cycle[i], cycle[(i+1)%len(cycle)]) for i in range(len(cycle))])
+                        else:
+                            cycle = nx.find_cycle(G)
+                            highlight_edges.update([(u, v) for u, v in cycle])
+                            highlight_nodes.update([u for u, v in cycle] + [cycle[-1][1]])
+                    except:
+                        pass
+                # Highlight nodes for Floyd-Warshall (k, i, j)
+                if algorithm == "Floyd_warshall" and current_step.get("current_nodes"):
+                    k, i, j = current_step["current_nodes"]
+                    highlight_nodes.update([k, i, j])
+                # Highlight nodes for Bellman-Ford (current edge)
+                if algorithm == "Bellman_ford" and current_step.get("current_edge"):
+                    u, v = current_step["current_edge"]
+                    highlight_nodes.update([u, v])
+                nodes_to_show = []
+                for node in [node.id for node in st.session_state["nodes"]]:
+                    color = "#1f78b4"
+                    if node == current:
+                        color = "#e41a1c"
+                    elif node in visited:
+                        color = "#4daf4a"
+                    elif algorithm in ["Kruskal", "Prim"] and node in visited:
+                        color = "#ff9800"
+                    if node in highlight_nodes:
+                        if algorithm == "Floyd_warshall":
+                            color = "#ff9800"  # orange for k, i, j
+                        elif algorithm == "Bellman_ford":
+                            color = "#ffd700"  # yellow for Bellman-Ford step
+                        else:
+                            color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
+                    nodes_to_show.append(
+                        Node(
+                            id=node,
+                            label=node,
+                            x=st.session_state["positions"][node]["x"],
+                            y=st.session_state["positions"][node]["y"],
+                            fixed=True,
+                            color=color,
+                            font_color="#000",
+                            font={"color": "#000"},
+                            title=str(node),
+                            size=15
+                        )
+                    )
+                edges_to_show = []
+                for edge in st.session_state["edges"]:
+                    edge_color = "#848484"
+                    edge_width = 3  # Thicker edges by default
+                    if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
+                        edge_color = "#ff9800"
+                        edge_width = 5
+                    if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
+                        edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
+                        edge_width = 5
+                    edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
+                # Update session state with new visualization
+                st.session_state["nodes_to_show"] = nodes_to_show
+                st.session_state["edges_to_show"] = edges_to_show
+            except:
                 pass
-        result = agraph(
-            nodes=nodes_to_show,
-            edges=edges_to_show,
-            config=config
-        )
-        if result and "nodes" in result:
-            for node in result["nodes"]:
-                node_id = node["id"]
-                if "x" in node and "y" in node:
-                    st.session_state["positions"][node_id] = {"x": node["x"], "y": node["y"]}
-        if result and ("zoom" in result or "scale" in result):
-            st.session_state["zoom"] = result.get("zoom", result.get("scale"))
+    except:
+        pass
+
+    config = Config(
+        width=1200,
+        height=1500,
+        directed=(graph_type == "Directed"),
+        physics=True,
+        hierarchical=False,
+    )
+    if "zoom" in st.session_state:
+        try:
+            config.zoom = st.session_state["zoom"]
+        except Exception:
+            pass
+    result = agraph(
+        nodes=st.session_state["nodes_to_show"],
+        edges=st.session_state["edges_to_show"],
+        config=config
+    )
+    if result and "nodes" in result:
+        for node in result["nodes"]:
+            node_id = node["id"]
+            if "x" in node and "y" in node:
+                st.session_state["positions"][node_id] = {"x": node["x"], "y": node["y"]}
+    if result and ("zoom" in result or "scale" in result):
+        st.session_state["zoom"] = result.get("zoom", result.get("scale"))
