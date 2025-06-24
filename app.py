@@ -89,7 +89,7 @@ with left:
                         found = True
                         break
                 if not found:
-                    st.session_state["edges"].append(Edge(source=src, target=tgt, label=str(default_weight), weight=default_weight))
+                    st.session_state["edges"].append(Edge(source=src, target=tgt, label=str(default_weight), weight=default_weight, width=3))
             else:
                 st.warning("Source and target must be different.")
 
@@ -153,211 +153,241 @@ with left:
                 if algorithm in shortest_path_algos:
                     st.session_state["sp_source"] = sp_source
                     st.session_state["sp_target"] = sp_target
-            except Exception as e:
-                st.error(f"Error running {algorithm}: {e}")
+            except:
+                pass
 
         # Show stepper only if algorithm is running
         if st.session_state["bfs_steps"]:
-            step_idx = st.session_state["bfs_step_idx"];
-            steps = st.session_state["bfs_steps"];
-            current_step = steps[step_idx];
-            col1, col2 = st.columns(2);
-            with col1:
-                if st.button("Previous Step", key="prev_step") and step_idx > 0:
-                    st.session_state["bfs_step_idx"] -= 1;
-            with col2:
-                if st.button("Next Step", key="next_step") and step_idx < len(steps) - 1:
-                    st.session_state["bfs_step_idx"] += 1;
+            try:
+                step_idx = st.session_state["bfs_step_idx"]
+                steps = st.session_state["bfs_steps"]
+                current_step = steps[step_idx]
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Previous Step", key="prev_step") and step_idx > 0:
+                        st.session_state["bfs_step_idx"] -= 1
+                with col2:
+                    if st.button("Next Step", key="next_step") and step_idx < len(steps) - 1:
+                        st.session_state["bfs_step_idx"] += 1
 
-            st.write(f"Step {step_idx+1} of {len(steps)}")
-            # Bellman-Ford
-            if algorithm == "Bellman_ford":
-                st.write(f"Current edge: {current_step.get('current_edge', 'N/A')}")
-                st.write(f"Distances: {current_step.get('distances', {})}")
-                st.write(f"Iteration: {current_step.get('iteration', 'N/A')}")
-                if step_idx == len(steps) - 1:
-                    if current_step['negative_cycle']:
-                        st.error("Negative weight cycle detected!")
-                    else:
-                        st.success("No negative weight cycle detected.")
-            # Floyd-Warshall
-            elif algorithm == "Floyd_warshall":
-                st.write(f"Current nodes (k,i,j): {current_step['current_nodes']}")
-                st.write(f"Distances: {current_step['distances']}")
-                if step_idx == len(steps) - 1:
-                    if current_step['negative_cycle']:
-                        st.error("Negative weight cycle detected!")
-                    else:
-                        st.success("No negative weight cycle detected.")
-            # Kahn's
-            elif algorithm == "Kahn":
-                st.write(f"Current: {current_step['current']}")
-                st.write(f"In-degree: {current_step['in_degree']}")
-                st.write(f"Queue: {current_step['queue']}")
-                st.write(f"Sorted list: {current_step['sorted_list']}")
-                if step_idx == len(steps) - 1:
-                    if current_step['cycle_detected']:
-                        st.error("Cycle detected! Topological sort not possible.")
-                    else:
-                        st.success("No cycle detected. Topological sort possible.")
-            # DFS-based Topo Sort
-            elif algorithm == "Dfs_topo":
-                st.write(f"Current: {current_step['current']}")
-                st.write(f"Visited: {list(current_step['visited'])}")
-                st.write(f"Sorted list: {current_step['sorted_list']}")
-                if step_idx == len(steps) - 1:
-                    if current_step['cycle_detected']:
-                        st.error("Cycle detected! Topological sort not possible.")
-                    else:
-                        st.success("No cycle detected. Topological sort possible.")
-            # Cycle Detection Undirected
-            elif algorithm == "Cycle_undirected":
-                st.write(f"Current: {current_step['current']}")
-                st.write(f"Visited: {list(current_step['visited'])}")
-                st.write(f"Parent: {current_step.get('parent', 'N/A')}")
-                if step_idx == len(steps) - 1:
-                    if current_step['cycle_found']:
-                        st.error("Cycle detected in undirected graph!")
-                    else:
-                        st.success("No cycle detected in undirected graph.")
-            # Cycle Detection Directed
-            elif algorithm == "Cycle_directed":
-                st.write(f"Current: {current_step['current']}")
-                st.write(f"Visited: {list(current_step['visited'])}")
-                st.write(f"Recursion stack: {list(current_step['rec_stack'])}")
-                if step_idx == len(steps) - 1:
-                    if current_step['cycle_found']:
-                        st.error("Cycle detected in directed graph!")
-                    else:
-                        st.success("No cycle detected in directed graph.")
-            # MST
-            elif algorithm in ["Kruskal", "Prim"]:
-                st.write(f"MST edges so far: {current_step['edges_in_mst']}")
-                st.write(f"Current edge considered: {current_step['current_edge']}")
-                st.write(f"MST total weight so far: {current_step['mst_weight']}")
-                if 'visited' in current_step:
-                    st.write(f"Nodes in MST so far: {list(current_step['visited'])}")
-            # Dijkstra
-            elif 'distances' in current_step:
-                st.write(f"Current distances: {current_step['distances']}")
-                min_dist = current_step['distances'].get(current_step.get('current', ''), float('inf'))
-                st.write(f"Minimum weight until current node ({current_step.get('current', '')}): {min_dist}")
+                st.write(f"Step {step_idx+1} of {len(steps)}")
+                # Bellman-Ford
+                if algorithm == "Bellman_ford":
+                    st.write(f"Current edge: {current_step.get('current_edge', 'N/A')}")
+                    st.write(f"Distances: {current_step.get('distances', {})}")
+                    st.write(f"Iteration: {current_step.get('iteration', 'N/A')}")
+                    if step_idx == len(steps) - 1:
+                        if current_step.get('negative_cycle', False):
+                            st.info("Negative weight cycle detected!")
+                        else:
+                            st.success("No negative weight cycle detected.")
+                # Floyd-Warshall
+                elif algorithm == "Floyd_warshall":
+                    try:
+                        st.write(f"Current nodes (k,i,j): {current_step.get('current_nodes', 'N/A')}")
+                        st.write(f"Distances: {current_step.get('distances', {})}")
+                        if step_idx == len(steps) - 1:
+                            if current_step.get('negative_cycle', False):
+                                st.info("Negative weight cycle detected!")
+                            else:
+                                st.success("No negative weight cycle detected.")
+                    except:
+                        pass
+                # Kahn's
+                elif algorithm == "Kahn":
+                    try:
+                        st.write(f"Current: {current_step.get('current', 'N/A')}")
+                        st.write(f"In-degree: {current_step.get('in_degree', {})}")
+                        st.write(f"Queue: {current_step.get('queue', [])}")
+                        st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
+                        if step_idx == len(steps) - 1:
+                            if current_step.get('cycle_detected', False):
+                                st.info("Cycle detected! Topological sort not possible.")
+                            else:
+                                st.success("No cycle detected. Topological sort possible.")
+                    except:
+                        pass
+                # DFS-based Topo Sort
+                elif algorithm == "Dfs_topo":
+                    try:
+                        st.write(f"Current: {current_step.get('current', 'N/A')}")
+                        st.write(f"Visited: {list(current_step.get('visited', []))}")
+                        st.write(f"Sorted list: {current_step.get('sorted_list', [])}")
+                        if step_idx == len(steps) - 1:
+                            if current_step.get('cycle_detected', False):
+                                st.info("Cycle detected! Topological sort not possible.")
+                            else:
+                                st.success("No cycle detected. Topological sort possible.")
+                    except:
+                        pass
+                # Cycle Detection Undirected
+                elif algorithm == "Cycle_undirected":
+                    try:
+                        st.write(f"Current: {current_step.get('current', 'N/A')}")
+                        st.write(f"Visited: {list(current_step.get('visited', []))}")
+                        st.write(f"Parent: {current_step.get('parent', 'N/A')}")
+                        if step_idx == len(steps) - 1:
+                            if current_step.get('cycle_found', False):
+                                st.info("Cycle detected in undirected graph!")
+                            else:
+                                st.success("No cycle detected in undirected graph.")
+                    except:
+                        pass
+                # Cycle Detection Directed
+                elif algorithm == "Cycle_directed":
+                    try:
+                        st.write(f"Current: {current_step.get('current', 'N/A')}")
+                        st.write(f"Visited: {list(current_step.get('visited', []))}")
+                        st.write(f"Recursion stack: {list(current_step.get('rec_stack', []))}")
+                        if step_idx == len(steps) - 1:
+                            if current_step.get('cycle_found', False):
+                                st.info("Cycle detected in directed graph!")
+                            else:
+                                st.success("No cycle detected in directed graph.")
+                    except:
+                        pass
+                # MST
+                elif algorithm in ["Kruskal", "Prim"]:
+                    try:
+                        st.write(f"MST edges so far: {current_step.get('edges_in_mst', [])}")
+                        st.write(f"Current edge considered: {current_step.get('current_edge', 'N/A')}")
+                        st.write(f"MST total weight so far: {current_step.get('mst_weight', 0)}")
+                        if 'visited' in current_step:
+                            st.write(f"Nodes in MST so far: {list(current_step.get('visited', []))}")
+                    except:
+                        pass
+                # Dijkstra
+                elif 'distances' in current_step:
+                    try:
+                        st.write(f"Current distances: {current_step.get('distances', {})}")
+                        min_dist = current_step.get('distances', {}).get(current_step.get('current', ''), float('inf'))
+                        st.write(f"Minimum weight until current node ({current_step.get('current', '')}): {min_dist}")
+                    except:
+                        pass
+            except:
+                pass
 
 with right:
     if st.session_state["nodes"]:
-        if st.session_state["bfs_steps"]:
-            step_idx = st.session_state["bfs_step_idx"]
-            steps = st.session_state["bfs_steps"]
-            current_step = steps[step_idx]
-            visited = current_step.get("visited", [])
-            current = current_step.get("current", None)
-            mst_edges = current_step.get("edges_in_mst", [])
-            highlight_edges = set()
-            highlight_nodes = set()
-            # Highlight shortest path for Dijkstra and Bellman-Ford
-            if algorithm in ["Dijkstra", "Bellman_ford"] and step_idx == len(steps) - 1:
-                distances = current_step.get("distances", {})
-                sp_source = st.session_state.get("sp_source")
-                sp_target = st.session_state.get("sp_target")
-                if distances and sp_source and sp_target and sp_source in distances and sp_target in distances and distances[sp_target] < float('inf'):
-                    import networkx as nx
-                    if graph_type == "Directed":
-                        G = nx.DiGraph()
-                    else:
-                        G = nx.Graph()
-                    node_ids = [node.id for node in st.session_state["nodes"]]
-                    G.add_nodes_from(node_ids)
-                    for edge in st.session_state["edges"]:
-                        G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
-                    try:
-                        path = nx.shortest_path(G, source=sp_source, target=sp_target, weight='weight')
-                        highlight_nodes.update(path)
-                        highlight_edges.update([(path[i], path[i+1]) for i in range(len(path)-1)])
-                    except Exception:
-                        pass
-            # Highlight cycle for cycle detection and topo sort/cycle detection algorithms
-            cycle_algos = ["Cycle_undirected", "Cycle_directed", "Kahn", "Dfs_topo"]
-            cycle_detected = False
-            if algorithm in cycle_algos:
-                # For direct cycle detection
-                if algorithm in ["Cycle_undirected", "Cycle_directed"] and current_step.get('cycle_found', False):
-                    cycle_detected = True
-                # For Kahn and Dfs_topo, check final step for cycle_detected
-                if algorithm in ["Kahn", "Dfs_topo"] and step_idx == len(steps) - 1 and current_step.get('cycle_detected', False):
-                    cycle_detected = True
-            if cycle_detected:
-                import networkx as nx
-                if graph_type == "Directed":
-                    G = nx.DiGraph()
-                else:
-                    G = nx.Graph()
-                node_ids = [node.id for node in st.session_state["nodes"]]
-                G.add_nodes_from(node_ids)
-                for edge in st.session_state["edges"]:
-                    G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
+        try:
+            if st.session_state["bfs_steps"]:
                 try:
-                    if graph_type == "Directed":
-                        cycle = next(nx.simple_cycles(G))
-                        highlight_nodes.update(cycle)
-                        highlight_edges.update([(cycle[i], cycle[(i+1)%len(cycle)]) for i in range(len(cycle))])
-                    else:
-                        cycle = nx.find_cycle(G)
-                        highlight_edges.update([(u, v) for u, v in cycle])
-                        highlight_nodes.update([u for u, v in cycle] + [cycle[-1][1]])
-                except Exception:
+                    step_idx = st.session_state["bfs_step_idx"]
+                    steps = st.session_state["bfs_steps"]
+                    current_step = steps[step_idx]
+                    visited = current_step.get("visited", [])
+                    current = current_step.get("current", None)
+                    mst_edges = current_step.get("edges_in_mst", [])
+                    highlight_edges = set()
+                    highlight_nodes = set()
+                    # Highlight shortest path for Dijkstra and Bellman-Ford
+                    if algorithm in ["Dijkstra", "Bellman_ford"] and step_idx == len(steps) - 1:
+                        try:
+                            distances = current_step.get("distances", {})
+                            sp_source = st.session_state.get("sp_source")
+                            sp_target = st.session_state.get("sp_target")
+                            if distances and sp_source and sp_target and sp_source in distances and sp_target in distances and distances[sp_target] < float('inf'):
+                                import networkx as nx
+                                if graph_type == "Directed":
+                                    G = nx.DiGraph()
+                                else:
+                                    G = nx.Graph()
+                                node_ids = [node.id for node in st.session_state["nodes"]]
+                                G.add_nodes_from(node_ids)
+                                for edge in st.session_state["edges"]:
+                                    G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
+                                try:
+                                    path = nx.shortest_path(G, source=sp_source, target=sp_target, weight='weight')
+                                    highlight_nodes.update(path)
+                                    highlight_edges.update([(path[i], path[i+1]) for i in range(len(path)-1)])
+                                except:
+                                    pass
+                        except:
+                            pass
+                    # Highlight cycle for cycle detection and topo sort/cycle detection algorithms
+                    cycle_algos = ["Cycle_undirected", "Cycle_directed", "Kahn", "Dfs_topo"]
+                    cycle_detected = False
+                    if algorithm in cycle_algos:
+                        # For direct cycle detection
+                        if algorithm in ["Cycle_undirected", "Cycle_directed"] and current_step.get('cycle_found', False):
+                            cycle_detected = True
+                        # For Kahn and Dfs_topo, check final step for cycle_detected
+                        if algorithm in ["Kahn", "Dfs_topo"] and step_idx == len(steps) - 1 and current_step.get('cycle_detected', False):
+                            cycle_detected = True
+                    if cycle_detected:
+                        import networkx as nx
+                        if graph_type == "Directed":
+                            G = nx.DiGraph()
+                        else:
+                            G = nx.Graph()
+                        node_ids = [node.id for node in st.session_state["nodes"]]
+                        G.add_nodes_from(node_ids)
+                        for edge in st.session_state["edges"]:
+                            G.add_edge(edge.source, edge.to, weight=getattr(edge, 'weight', 1))
+                        try:
+                            if graph_type == "Directed":
+                                cycle = next(nx.simple_cycles(G))
+                                highlight_nodes.update(cycle)
+                                highlight_edges.update([(cycle[i], cycle[(i+1)%len(cycle)]) for i in range(len(cycle))])
+                            else:
+                                cycle = nx.find_cycle(G)
+                                highlight_edges.update([(u, v) for u, v in cycle])
+                                highlight_nodes.update([u for u, v in cycle] + [cycle[-1][1]])
+                        except Exception:
+                            pass
+                    # Highlight nodes for Floyd-Warshall (k, i, j)
+                    if algorithm == "Floyd_warshall" and current_step.get("current_nodes"):
+                        k, i, j = current_step["current_nodes"]
+                        highlight_nodes.update([k, i, j])
+                    # Highlight nodes for Bellman-Ford (current edge)
+                    if algorithm == "Bellman_ford" and current_step.get("current_edge"):
+                        u, v = current_step["current_edge"]
+                        highlight_nodes.update([u, v])
+                    nodes_to_show = []
+                    for node in [node.id for node in st.session_state["nodes"]]:
+                        color = "#1f78b4"
+                        if node == current:
+                            color = "#e41a1c"
+                        elif node in visited:
+                            color = "#4daf4a"
+                        elif algorithm in ["Kruskal", "Prim"] and node in visited:
+                            color = "#ff9800"
+                        if node in highlight_nodes:
+                            if algorithm == "Floyd_warshall":
+                                color = "#ff9800"  # orange for k, i, j
+                            elif algorithm == "Bellman_ford":
+                                color = "#ffd700"  # yellow for Bellman-Ford step
+                            else:
+                                color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
+                        nodes_to_show.append(
+                            Node(
+                                id=node,
+                                label=node,
+                                x=st.session_state["positions"][node]["x"],
+                                y=st.session_state["positions"][node]["y"],
+                                fixed=True,
+                                color=color,
+                                font_color="#000",
+                                font={"color": "#000"},
+                                title=str(node),
+                                size=15
+                            )
+                        )
+                    edges_to_show = []
+                    for edge in st.session_state["edges"]:
+                        edge_color = "#848484"
+                        edge_width = 3  # Thicker edges by default
+                        if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
+                            edge_color = "#ff9800"
+                            edge_width = 5
+                        if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
+                            edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
+                            edge_width = 5
+                        edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
+                except:
                     pass
-            # Highlight nodes for Floyd-Warshall (k, i, j)
-            if algorithm == "Floyd_warshall" and current_step.get("current_nodes"):
-                k, i, j = current_step["current_nodes"]
-                highlight_nodes.update([k, i, j])
-            # Highlight nodes for Bellman-Ford (current edge)
-            if algorithm == "Bellman_ford" and current_step.get("current_edge"):
-                u, v = current_step["current_edge"]
-                highlight_nodes.update([u, v])
-            nodes_to_show = []
-            for node in [node.id for node in st.session_state["nodes"]]:
-                color = "#1f78b4"
-                if node == current:
-                    color = "#e41a1c"
-                elif node in visited:
-                    color = "#4daf4a"
-                elif algorithm in ["Kruskal", "Prim"] and node in visited:
-                    color = "#ff9800"
-                if node in highlight_nodes:
-                    if algorithm == "Floyd_warshall":
-                        color = "#ff9800"  # orange for k, i, j
-                    elif algorithm == "Bellman_ford":
-                        color = "#ffd700"  # yellow for Bellman-Ford step
-                    else:
-                        color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                nodes_to_show.append(
-                    Node(
-                        id=node,
-                        label=node,
-                        x=st.session_state["positions"][node]["x"],
-                        y=st.session_state["positions"][node]["y"],
-                        fixed=True,
-                        color=color,
-                        font_color="#000",
-                        font={"color": "#000"},
-                        title=str(node),
-                        size=15
-                    )
-                )
-            edges_to_show = []
-            for edge in st.session_state["edges"]:
-                edge_color = "#848484"
-                edge_width = 3  # Thicker edges by default
-                if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
-                    edge_color = "#ff9800"
-                    edge_width = 5
-                if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
-                    edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                    edge_width = 5
-                edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
-        else:
-            nodes_to_show = st.session_state["nodes"]
-            edges_to_show = st.session_state["edges"]
+        except:
+            pass
         config = Config(
             width=1200,
             height=1500,
