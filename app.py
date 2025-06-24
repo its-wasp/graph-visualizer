@@ -4,6 +4,7 @@ from streamlit_agraph import agraph, Node, Edge, Config
 import math
 from graph_engine import get_algorithms
 import pandas as pd
+import random
 st.title("Graph Visualizer")
 
 # Initialize session state
@@ -53,37 +54,110 @@ with left:
 
     if mode == "Auto-generate nodes (1 to n)":
         n = st.number_input("Enter the number of nodes (n):", min_value=1, value=5, step=1)
-        if st.button("Generate Nodes"):
-            node_ids = [str(i) for i in range(1, n+1)]
-            st.session_state["positions"] = assign_circular_positions(node_ids)
-            st.session_state["nodes"] = [
-                Node(id=node_id, label=node_id, x=st.session_state["positions"][node_id]["x"], y=st.session_state["positions"][node_id]["y"], fixed=True, size=15)
-                for node_id in node_ids
-            ]
-            st.session_state["edges"] = []
-            # Initialize default visualization
-            st.session_state["nodes_to_show"] = [
-                Node(
-                    id=node_id,
-                    label=node_id,
-                    x=st.session_state["positions"][node_id]["x"],
-                    y=st.session_state["positions"][node_id]["y"],
-                    fixed=True,
-                    color="#1f78b4",
-                    font_color="#000",
-                    font={"color": "#000"},
-                    title=str(node_id),
-                    size=15
-                ) for node_id in node_ids
-            ]
-            st.session_state["edges_to_show"] = []
+        import random
+        col_gn, col_gg = st.columns(2)
+        with col_gn:
+            if st.button("Generate Nodes"):
+                node_ids = [str(i) for i in range(1, n+1)]
+                st.session_state["positions"] = assign_circular_positions(node_ids)
+                st.session_state["nodes"] = [
+                    Node(
+                        id=node_id,
+                        label=node_id,
+                        x=st.session_state["positions"][node_id]["x"],
+                        y=st.session_state["positions"][node_id]["y"],
+                        fixed=True,
+                        size=15,
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                    )
+                    for node_id in node_ids
+                ]
+                st.session_state["edges"] = []
+                # Initialize default visualization
+                st.session_state["nodes_to_show"] = [
+                    Node(
+                        id=node_id,
+                        label=node_id,
+                        x=st.session_state["positions"][node_id]["x"],
+                        y=st.session_state["positions"][node_id]["y"],
+                        fixed=True,
+                        color="#1f78b4",
+                        font_color="#000",
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
+                        title=str(node_id),
+                        size=15
+                    ) for node_id in node_ids
+                ]
+                st.session_state["edges_to_show"] = []
+        with col_gg:
+            if st.button("Generate Graph"):
+                node_ids = [str(i) for i in range(1, n+1)]
+                st.session_state["positions"] = assign_circular_positions(node_ids)
+                st.session_state["nodes"] = [
+                    Node(
+                        id=node_id,
+                        label=node_id,
+                        x=st.session_state["positions"][node_id]["x"],
+                        y=st.session_state["positions"][node_id]["y"],
+                        fixed=True,
+                        size=15,
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                    )
+                    for node_id in node_ids
+                ]
+                # Generate all possible unique edges
+                possible_edges = []
+                if graph_type == "Undirected":
+                    for i in range(n):
+                        for j in range(i+1, n):
+                            possible_edges.append((node_ids[i], node_ids[j]))
+                else:
+                    for i in range(n):
+                        for j in range(n):
+                            if i != j:
+                                possible_edges.append((node_ids[i], node_ids[j]))
+                max_edges = len(possible_edges)
+                num_edges = random.randint(1, max_edges) if max_edges > 0 else 0
+                random_edges = random.sample(possible_edges, num_edges)
+                # All edges have weight=1 and label='1'
+                st.session_state["edges"] = [
+                    Edge(source=src, target=tgt, label="1", weight=1, width=3)
+                    for src, tgt in random_edges
+                ]
+                # Initialize default visualization
+                st.session_state["nodes_to_show"] = [
+                    Node(
+                        id=node_id,
+                        label=node_id,
+                        x=st.session_state["positions"][node_id]["x"],
+                        y=st.session_state["positions"][node_id]["y"],
+                        fixed=True,
+                        color="#1f78b4",
+                        font_color="#000",
+                        font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
+                        title=str(node_id),
+                        size=15
+                    ) for node_id in node_ids
+                ]
+                st.session_state["edges_to_show"] = [
+                    Edge(source=src, target=tgt, label="1", weight=1, width=3)
+                    for src, tgt in random_edges
+                ]
     elif mode == "Manually define nodes and edges":
         node_str = st.text_input("Enter nodes (comma-separated):", "A,B,C")
         if st.button("Generate Nodes"):
             node_list = [node.strip() for node in node_str.split(",") if node.strip()]
             st.session_state["positions"] = assign_circular_positions(node_list)
             st.session_state["nodes"] = [
-                Node(id=node, label=node, x=st.session_state["positions"][node]["x"], y=st.session_state["positions"][node]["y"], fixed=True, size=15)
+                Node(
+                    id=node,
+                    label=node,
+                    x=st.session_state["positions"][node]["x"],
+                    y=st.session_state["positions"][node]["y"],
+                    fixed=True,
+                    size=15,
+                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0}
+                )
                 for node in node_list
             ]
             st.session_state["edges"] = []
@@ -97,7 +171,7 @@ with left:
                     fixed=True,
                     color="#1f78b4",
                     font_color="#000",
-                    font={"color": "#000"},
+                    font={"color": "#000", "size": 21, "align": "center", "vadjust": 0},
                     title=str(node),
                     size=15
                 ) for node in node_list
@@ -472,7 +546,7 @@ with right:
                             fixed=True,
                             color=color,
                             font_color="#000",
-                            font={"color": "#000"},
+                            font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
                             title=str(node),
                             size=15
                         )
@@ -506,7 +580,7 @@ with right:
                         fixed=True,
                         color="#1f78b4",
                         font_color="#000",
-                        font={"color": "#000"},
+                        font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
                         title=str(node.id),
                         size=15
                     ) for node in st.session_state["nodes"]
@@ -532,7 +606,7 @@ with right:
                     fixed=True,
                     color="#1f78b4",
                     font_color="#000",
-                    font={"color": "#000"},
+                    font={"color": "#000", "size": 18, "align": "center", "vadjust": 0},
                     title=str(node.id),
                     size=15
                 ) for node in st.session_state["nodes"]
