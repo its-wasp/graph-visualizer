@@ -31,7 +31,7 @@ with left:
 
     mode = st.radio(
         "Choose graph creation mode:",
-        ("Auto-generate nodes (1 to n)", "Manually define nodes and edges")
+        ("Auto-generate nodes (1 to n)", "Manually define nodes and edges", "Paste edge list")
     )
 
     algorithms = get_algorithms()
@@ -177,6 +177,70 @@ with left:
                 ) for node in node_list
             ]
             st.session_state["edges_to_show"] = []
+    elif mode == "Paste edge list":
+        n = st.number_input("Enter the number of nodes (n):", min_value=1, value=5, step=1)
+        edge_list_str = st.text_area(
+            "Paste edge list (e.g. [[1,2],[2,3,5],[3,1]]):",
+            value="[[1,2],[2,3,5],[3,1]]",
+            height=150
+        )
+        if st.button("Generate Graph from Edge List"):
+            import ast
+            import random
+            try:
+                edge_list = ast.literal_eval(edge_list_str)
+                # Validate edge_list is a list of lists
+                if not isinstance(edge_list, list) or not all(isinstance(e, list) and (len(e) == 2 or len(e) == 3) for e in edge_list):
+                    st.error("Edge list must be a list of [u, v] or [u, v, w] lists.")
+                else:
+                    node_ids = [str(i) for i in range(1, n+1)]
+                    st.session_state["positions"] = assign_circular_positions(node_ids)
+                    st.session_state["nodes"] = [
+                        Node(
+                            id=node_id,
+                            label=node_id,
+                            x=st.session_state["positions"][node_id]["x"],
+                            y=st.session_state["positions"][node_id]["y"],
+                            fixed=True,
+                            size=15,
+                            font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"}
+                        )
+                        for node_id in node_ids
+                    ]
+                    edges = []
+                    for e in edge_list:
+                        u, v = str(e[0]), str(e[1])
+                        if u not in node_ids or v not in node_ids:
+                            st.error(f"Node {u} or {v} is out of range (should be 1 to {n}).")
+                            break
+                        weight = e[2] if len(e) == 3 else 1
+                        label = str(weight)
+                        if graph_type == "Undirected":
+                            edge_tuple = tuple(sorted([u, v]))
+                            if edge_tuple not in [(ed.source, ed.to) if ed.source < ed.to else (ed.to, ed.source) for ed in edges]:
+                                edges.append(Edge(source=edge_tuple[0], target=edge_tuple[1], label=label, weight=weight, width=3))
+                        else:
+                            if (u, v) not in [(ed.source, ed.to) for ed in edges]:
+                                edges.append(Edge(source=u, target=v, label=label, weight=weight, width=3))
+                    st.session_state["edges"] = edges
+                    st.session_state["nodes_to_show"] = [
+                        Node(
+                            id=node_id,
+                            label=node_id,
+                            x=st.session_state["positions"][node_id]["x"],
+                            y=st.session_state["positions"][node_id]["y"],
+                            fixed=True,
+                            color="#1f78b4",
+                            font_color="#000",
+                            font={"color": "#000", "size": 21, "align": "center", "vadjust": 0, "strokeWidth": 6, "strokeColor": "#FFF"},
+                            title=str(node_id),
+                            size=15
+                        ) for node_id in node_ids
+                    ]
+                    st.session_state["edges_to_show"] = edges
+                    st.success("Graph generated from edge list!")
+            except Exception as ex:
+                st.error(f"Invalid edge list: {ex}")
 
     # Add edge UI
     if st.session_state["nodes"]:
