@@ -198,7 +198,7 @@ with left:
             step_idx = st.session_state["bfs_step_idx"]
             steps = st.session_state["bfs_steps"]
             current_step = steps[step_idx]
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
 
             # Handle step navigation
             with col1:
@@ -210,6 +210,12 @@ with left:
             with col2:
                 if st.button("Next Step", key="next_step") and step_idx < len(steps) - 1:
                     st.session_state["bfs_step_idx"] += 1
+                    step_idx = st.session_state["bfs_step_idx"]
+                    current_step = steps[step_idx]
+
+            with col3:
+                if st.button("Skip to End", key="skip_end"):
+                    st.session_state["bfs_step_idx"] = len(steps) - 1
                     step_idx = st.session_state["bfs_step_idx"]
                     current_step = steps[step_idx]
 
@@ -232,17 +238,20 @@ with left:
                             st.info("Negative weight cycle detected!")
                         else:
                             st.success("No negative weight cycle detected!")
-                            # Display final distances in a table
-                            st.subheader("Final Shortest Path Distances")
-                            df_data = []
-                            for node in sorted(distances.keys()):
-                                dist = distances[node]
-                                df_data.append({
-                                    "Node": node,
-                                    "Distance from Source": "∞" if dist == float('inf') else dist
-                                })
-                            df = pd.DataFrame(df_data)
-                            st.dataframe(df, hide_index=True)
+                            try:
+                                # Display final distances in a table
+                                st.subheader("Final Shortest Path Distances")
+                                df_data = []
+                                for node in sorted(distances.keys()):
+                                    dist = distances[node]
+                                    df_data.append({
+                                        "Node": node,
+                                        "Distance from Source": "∞" if dist == float('inf') else dist
+                                    })
+                                df = pd.DataFrame(df_data)
+                                st.dataframe(df, hide_index=True)
+                            except Exception as e:
+                                st.error(f"Error displaying Bellman-Ford table: {str(e)}")
 
                 # Floyd-Warshall
                 elif algorithm == "Floyd_warshall":
@@ -257,19 +266,21 @@ with left:
                             st.info("Negative weight cycle detected!")
                         else:
                             st.success("No negative weight cycle detected!")
-                            # Display final distances in a table
-                            st.subheader("All Pairs Shortest Path Distances")
-                            # Convert the nested dictionary to a DataFrame
-                            nodes = sorted(distances.keys())
-                            df_data = []
-                            for source in nodes:
-                                row = {"Source": source}
-                                for target in nodes:
-                                    dist = distances[source][target]
-                                    row[f"To {target}"] = "∞" if dist == float('inf') else dist
-                                df_data.append(row)
-                            df = pd.DataFrame(df_data)
-                            st.dataframe(df, hide_index=True)
+                            try:
+                                # Display final distances in a table
+                                st.subheader("All Pairs Shortest Path Distances")
+                                nodes = sorted(distances.keys())
+                                df_data = []
+                                for source in nodes:
+                                    row = {"Source": source}
+                                    for target in nodes:
+                                        dist = distances[source][target]
+                                        row[f"To {target}"] = "∞" if dist == float('inf') else dist
+                                    df_data.append(row)
+                                df = pd.DataFrame(df_data)
+                                st.dataframe(df, hide_index=True)
+                            except Exception as e:
+                                st.error(f"Error displaying Floyd-Warshall table: {str(e)}")
 
                 # Kahn's
                 elif algorithm == "Kahn":
@@ -337,17 +348,20 @@ with left:
                     st.write(f"Minimum weight until current node ({current}): {min_dist}")
                     
                     if step_idx == len(steps) - 1:
-                        # Display final distances in a table
-                        st.subheader("Final Shortest Path Distances")
-                        df_data = []
-                        for node in sorted(distances.keys()):
-                            dist = distances[node]
-                            df_data.append({
-                                "Node": node,
-                                "Distance from Source": "∞" if dist == float('inf') else dist
-                            })
-                        df = pd.DataFrame(df_data)
-                        st.dataframe(df, hide_index=True)
+                        try:
+                            # Display final distances in a table
+                            st.subheader("Final Shortest Path Distances")
+                            df_data = []
+                            for node in sorted(distances.keys()):
+                                dist = distances[node]
+                                df_data.append({
+                                    "Node": node,
+                                    "Distance from Source": "∞" if dist == float('inf') else dist
+                                })
+                            df = pd.DataFrame(df_data)
+                            st.dataframe(df, hide_index=True)
+                        except Exception as e:
+                            st.error(f"Error displaying Dijkstra table: {str(e)}")
             except:
                 pass
 
