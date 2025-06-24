@@ -304,6 +304,12 @@ with left:
                 pass
 
 with right:
+    # Initialize visualization variables in session state if they don't exist
+    if "nodes_to_show" not in st.session_state:
+        st.session_state["nodes_to_show"] = []
+    if "edges_to_show" not in st.session_state:
+        st.session_state["edges_to_show"] = []
+
     try:
         if st.session_state["bfs_steps"]:
             try:
@@ -378,7 +384,8 @@ with right:
                 if algorithm == "Bellman_ford" and current_step.get("current_edge"):
                     u, v = current_step["current_edge"]
                     highlight_nodes.update([u, v])
-                nodes_to_show = []
+                # Create temporary lists for visualization
+                temp_nodes = []
                 for node in [node.id for node in st.session_state["nodes"]]:
                     color = "#1f78b4"
                     if node == current:
@@ -394,7 +401,7 @@ with right:
                             color = "#ffd700"  # yellow for Bellman-Ford step
                         else:
                             color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
-                    nodes_to_show.append(
+                    temp_nodes.append(
                         Node(
                             id=node,
                             label=node,
@@ -408,25 +415,80 @@ with right:
                             size=15
                         )
                     )
-                edges_to_show = []
+
+                temp_edges = []
                 for edge in st.session_state["edges"]:
                     edge_color = "#848484"
-                    edge_width = 3  # Thicker edges by default
+                    edge_width = 3
                     if algorithm in ["Kruskal", "Prim"] and (edge.source, edge.to) in mst_edges or (edge.to, edge.source) in mst_edges:
                         edge_color = "#ff9800"
                         edge_width = 5
                     if (edge.source, edge.to) in highlight_edges or (edge.to, edge.source) in highlight_edges:
                         edge_color = "#9c27b0" if algorithm in ["Dijkstra", "Bellman_ford"] else "#d32f2f"
                         edge_width = 5
-                    edges_to_show.append(Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width))
-                # Update session state with new visualization
-                st.session_state["nodes_to_show"] = nodes_to_show
-                st.session_state["edges_to_show"] = edges_to_show
+                    temp_edges.append(
+                        Edge(source=edge.source, target=edge.to, label=edge.label, weight=edge.weight, color=edge_color, width=edge_width)
+                    )
+
+                # Update session state
+                st.session_state["nodes_to_show"] = temp_nodes
+                st.session_state["edges_to_show"] = temp_edges
             except:
-                pass
+                # If algorithm visualization fails, fall back to default visualization
+                st.session_state["nodes_to_show"] = [
+                    Node(
+                        id=node.id,
+                        label=node.id,
+                        x=st.session_state["positions"][node.id]["x"],
+                        y=st.session_state["positions"][node.id]["y"],
+                        fixed=True,
+                        color="#1f78b4",
+                        font_color="#000",
+                        font={"color": "#000"},
+                        title=str(node.id),
+                        size=15
+                    ) for node in st.session_state["nodes"]
+                ]
+                st.session_state["edges_to_show"] = [
+                    Edge(
+                        source=edge.source,
+                        target=edge.to,
+                        label=edge.label,
+                        weight=edge.weight,
+                        color="#848484",
+                        width=3
+                    ) for edge in st.session_state["edges"]
+                ]
+        else:
+            # Default visualization when no algorithm is running
+            st.session_state["nodes_to_show"] = [
+                Node(
+                    id=node.id,
+                    label=node.id,
+                    x=st.session_state["positions"][node.id]["x"],
+                    y=st.session_state["positions"][node.id]["y"],
+                    fixed=True,
+                    color="#1f78b4",
+                    font_color="#000",
+                    font={"color": "#000"},
+                    title=str(node.id),
+                    size=15
+                ) for node in st.session_state["nodes"]
+            ]
+            st.session_state["edges_to_show"] = [
+                Edge(
+                    source=edge.source,
+                    target=edge.to,
+                    label=edge.label,
+                    weight=edge.weight,
+                    color="#848484",
+                    width=3
+                ) for edge in st.session_state["edges"]
+            ]
     except:
         pass
 
+    # Configure and display the graph
     config = Config(
         width=1200,
         height=1500,
@@ -434,16 +496,21 @@ with right:
         physics=True,
         hierarchical=False,
     )
+
     if "zoom" in st.session_state:
         try:
             config.zoom = st.session_state["zoom"]
-        except Exception:
+        except:
             pass
+
+    # Use session state for visualization
     result = agraph(
         nodes=st.session_state["nodes_to_show"],
         edges=st.session_state["edges_to_show"],
         config=config
     )
+
+    # Update positions and zoom
     if result and "nodes" in result:
         for node in result["nodes"]:
             node_id = node["id"]
